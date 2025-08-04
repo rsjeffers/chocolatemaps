@@ -1,0 +1,18 @@
+# This is a basic example of a Render YAML configuration file for a Streamlit app
+services:
+  - type: web # A Python web service named chocolate-app running on a free instance
+    plan: free
+    name: chocolate-app
+    runtime: python
+    repo: https://github.com/rsjeffers/chocolatemaps.git
+    buildCommand: 'pip install -r requirements.txt'
+    startCommand: 'streamlit run main.py --server.port $PORT --server.address 0.0.0.0'
+    envVars:
+      - key: DATABASE_URL # Sets DATABASE_URL to the connection string of the chocolate-app-db database
+        fromDatabase:
+          name: chocolate-app-db
+          property: connectionString
+
+databases:
+  - name: chocolate-app-db # A Render Postgres database named chocolate-app-db running on a free instance
+    plan: free
