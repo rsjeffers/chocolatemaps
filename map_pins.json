@@ -1,0 +1,20 @@
+[
+  {
+    "price": 0.95,
+    "location": "Tesco",
+    "brand": "Cadbury Orange Twirl",
+    "fact": "",
+    "lat": 51.58786303042704,
+    "lon": -0.04032969474792481,
+    "timestamp": "2025-08-04 21:11:31"
+  },
+  {
+    "price": 0.95,
+    "location": "Coop",
+    "brand": "Cadbury Orange Twirl",
+    "fact": "",
+    "lat": 51.53693981046692,
+    "lon": -0.013732910156250002,
+    "timestamp": "2025-08-04 21:36:23"
+  }
+]
