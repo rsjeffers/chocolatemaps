@@ -1,9 +1,9 @@
 import streamlit as st
 import folium
 from streamlit_folium import st_folium
-import json
 import os
 from datetime import datetime
+from data_manager import data_manager
 
 # Set page config
 st.set_page_config(
@@ -12,28 +12,14 @@ st.set_page_config(
     layout="wide"
 )
 
-# File to store pins data
-PINS_FILE = "map_pins.json"
-
+# Data management functions using the persistent data manager
 def load_pins():
-    """Load pins from JSON file"""
-    if os.path.exists(PINS_FILE):
-        try:
-            with open(PINS_FILE, 'r', encoding='utf-8') as f:
-                return json.load(f)
-        except (json.JSONDecodeError, FileNotFoundError):
-            return []
-    return []
+    """Load pins using the data manager"""
+    return data_manager.load_pins()
 
-def save_pins(pins):
-    """Save pins to JSON file"""
-    try:
-        with open(PINS_FILE, 'w', encoding='utf-8') as f:
-            json.dump(pins, f, indent=2, ensure_ascii=False)
-        return True
-    except Exception as e:
-        st.error(f"Error saving pins: {e}")
-        return False
+def save_pin(price, location, brand, fact, lat, lon):
+    """Save a new pin using the data manager"""
+    return data_manager.add_pin(price, location, brand, fact, lat, lon)
 
 def create_map(pins, center_lat, center_lon):
     """Create a folium map with existing pins"""
@@ -124,16 +110,35 @@ def main():
                     st.write(f"**Added:** {pin['timestamp']}")
                     
                     if st.button(f"Delete Pin {i+1}", key=f"delete_{i}"):
-                        st.session_state.pins.pop(i)
-                        save_pins(st.session_state.pins)
-                        st.rerun()
+                        if data_manager.delete_pin(i):
+                            st.session_state.pins = load_pins()  # Refresh from storage
+                            st.rerun()
+                        else:
+                            st.error("Failed to delete pin")
         else:
             st.info("No chocolate prices added yet. Click on the map to add your first price entry!")
         
+        # Data storage info (for debugging/transparency)
+        with st.expander("📁 Storage Info", expanded=False):
+            info = data_manager.get_data_info()
+            st.write(f"**Environment:** {'Render Cloud' if info['is_render_environment'] else 'Local Development'}")
+            st.write(f"**Data Directory:** {info['data_directory']}")
+            st.write(f"**Total Pins:** {info['pin_count']}")
+            st.write(f"**File Size:** {info['file_size_bytes']} bytes")
+            
+            if st.button("📋 Create Backup"):
+                backup_path = data_manager.backup_data()
+                if backup_path:
+                    st.success(f"Backup created: {os.path.basename(backup_path)}")
+                else:
+                    st.error("Failed to create backup")
+        
         if st.button("🗑️ Clear All Pins"):
-            st.session_state.pins = []
-            save_pins(st.session_state.pins)
-            st.rerun()
+            if data_manager.clear_all_pins():
+                st.session_state.pins = []
+                st.rerun()
+            else:
+                st.error("Failed to clear pins")
     
     # Main map area
     col1, col2 = st.columns([3, 1])
@@ -205,20 +210,9 @@ def main():
                     cancelled = st.form_submit_button("❌ Cancel", use_container_width=True)
                 
                 if submitted and location and price > 0:
-                    new_pin = {
-                        'price': price,
-                        'location': location,
-                        'brand': brand,
-                        'fact': fact,
-                        'lat': lat,
-                        'lon': lon,
-                        'timestamp': datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                    }
-                    
-                    st.session_state.pins.append(new_pin)
-                    
-                    if save_pins(st.session_state.pins):
+                    if save_pin(price, location, brand, fact, lat, lon):
                         st.success("Pin added successfully!")
+                        st.session_state.pins = load_pins()  # Refresh from storage
                         st.session_state.show_form = False
                         st.session_state.selected_location = None
                         st.rerun()
