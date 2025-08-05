@@ -3,7 +3,7 @@ import folium
 from streamlit_folium import st_folium
 import os
 from datetime import datetime
-from data_manager import data_manager
+from database_manager import database_manager
 
 # Set page config
 st.set_page_config(
@@ -12,14 +12,14 @@ st.set_page_config(
     layout="wide"
 )
 
-# Data management functions using the persistent data manager
+# Data management functions using the persistent database manager
 def load_pins():
-    """Load pins using the data manager"""
-    return data_manager.load_pins()
+    """Load pins using the database manager"""
+    return database_manager.load_pins()
 
 def save_pin(price, location, brand, fact, lat, lon):
-    """Save a new pin using the data manager"""
-    return data_manager.add_pin(price, location, brand, fact, lat, lon)
+    """Save a new pin using the database manager"""
+    return database_manager.add_pin(price, location, brand, fact, lat, lon)
 
 def create_map(pins, center_lat, center_lon):
     """Create a folium map with existing pins"""
@@ -110,7 +110,9 @@ def main():
                     st.write(f"**Added:** {pin['timestamp']}")
                     
                     if st.button(f"Delete Pin {i+1}", key=f"delete_{i}"):
-                        if data_manager.delete_pin(i):
+                        # Use the pin's ID for database, or index for JSON
+                        pin_id = pin.get('id', i)
+                        if database_manager.delete_pin(pin_id):
                             st.session_state.pins = load_pins()  # Refresh from storage
                             st.rerun()
                         else:
@@ -120,21 +122,26 @@ def main():
         
         # Data storage info (for debugging/transparency)
         with st.expander("📁 Storage Info", expanded=False):
-            info = data_manager.get_data_info()
-            st.write(f"**Environment:** {'Render Cloud' if info['is_render_environment'] else 'Local Development'}")
-            st.write(f"**Data Directory:** {info['data_directory']}")
+            info = database_manager.get_data_info()
+            st.write(f"**Storage Type:** {info['storage_type']}")
+            if 'database_url' in info:
+                st.write(f"**Database:** Connected" if info['connection_status'] == 'Connected' else f"**Database:** {info['connection_status']}")
+            elif 'data_directory' in info:
+                st.write(f"**Environment:** {'Render Cloud' if info.get('is_render_environment') else 'Local Development'}")
+                st.write(f"**Data Directory:** {info['data_directory']}")
+                st.write(f"**File Size:** {info.get('file_size_bytes', 0)} bytes")
             st.write(f"**Total Pins:** {info['pin_count']}")
-            st.write(f"**File Size:** {info['file_size_bytes']} bytes")
             
-            if st.button("📋 Create Backup"):
-                backup_path = data_manager.backup_data()
+            # Only show backup for JSON storage
+            if 'data_directory' in info and st.button("📋 Create Backup"):
+                backup_path = database_manager.json_manager.backup_data() if hasattr(database_manager, 'json_manager') else None
                 if backup_path:
                     st.success(f"Backup created: {os.path.basename(backup_path)}")
                 else:
                     st.error("Failed to create backup")
         
         if st.button("🗑️ Clear All Pins"):
-            if data_manager.clear_all_pins():
+            if database_manager.clear_all_pins():
                 st.session_state.pins = []
                 st.rerun()
             else:

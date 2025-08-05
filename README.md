@@ -38,18 +38,28 @@ The application will open in your default web browser at `http://localhost:8501`
 
 ## Data Storage
 
-- Pins are stored in `map_pins.json` in the same directory as the application
-- Data includes title, fact, coordinates, and timestamp for each pin
+The application now supports **PostgreSQL database storage** for production deployment on Render, with automatic fallback to JSON file storage for local development.
+
+### Production (Render)
+- Uses PostgreSQL database (`chocolate-app-db`)
+- Automatic data persistence and backup
+- Environment variable `DATABASE_URL` is automatically set by Render
+
+### Local Development
+- Falls back to JSON file storage if no database is available
+- Pins stored in `data/map_pins.json`
 - Data persists between application sessions
 
-## Customization
 
-You can easily customize:
-- Default map center location
-- Map tiles and styling
-- Pin icons and colors
-- Quick location presets
-- UI layout and styling
+## Environment Setup
+
+### For Render Deployment
+1. The `render.yaml` file is already configured
+2. Database URL is automatically provided by Render
+3. No additional setup required
+
+### For Local Development
+Use JSON storage (default) - no setup required
 
 ## Dependencies
 
@@ -57,6 +67,8 @@ You can easily customize:
 - **Folium**: Interactive map visualization
 - **streamlit-folium**: Streamlit-Folium integration
 - **Pandas**: Data manipulation (optional)
+- **psycopg2-binary**: PostgreSQL adapter for Python
+- **python-dotenv**: Environment variable management
 
 ## License
 
