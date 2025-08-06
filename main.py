@@ -17,9 +17,9 @@ def load_pins():
     """Load pins using the database manager"""
     return database_manager.load_pins()
 
-def save_pin(price, location, brand, fact, lat, lon):
+def save_pin(price, location, brand, fact, lat, lon, is_multi_pack):
     """Save a new pin using the database manager"""
-    return database_manager.add_pin(price, location, brand, fact, lat, lon)
+    return database_manager.add_pin(price, location, brand, fact, lat, lon, is_multi_pack)
 
 def create_map(pins, center_lat, center_lon):
     """Create a folium map with existing pins"""
@@ -139,18 +139,12 @@ def main():
                     st.success(f"Backup created: {os.path.basename(backup_path)}")
                 else:
                     st.error("Failed to create backup")
-        
-        if st.button("🗑️ Clear All Pins"):
-            if database_manager.clear_all_pins():
-                st.session_state.pins = []
-                st.rerun()
-            else:
-                st.error("Failed to clear pins")
+
     
     # Main map area
-    col1, col2 = st.columns([3, 1])
+    col1, col2 = st.columns([1, 3])
     
-    with col1:
+    with col2:
         # Create and display the map
         m = create_map(st.session_state.pins, center_lat, center_lon)
         
@@ -170,10 +164,10 @@ def main():
             st.session_state.selected_location = (clicked_lat, clicked_lon)
             st.session_state.show_form = True
     
-    with col2:
+    with col1:
         # Form for adding new pins
         if st.session_state.show_form and st.session_state.selected_location:
-            st.subheader("🍫 Add Price Entry")
+            st.subheader("💰 Add Price Entry")
             
             lat, lon = st.session_state.selected_location
             st.write(f"**Selected Location:**")
@@ -208,6 +202,9 @@ def main():
                         height=100
                     )
                 
+                # Checkbox for marking good deals
+                is_multi_pack = st.checkbox("Part of a multi-pack", value=False)
+                
                 submit_col1, submit_col2 = st.columns(2)
                 
                 with submit_col1:
@@ -217,7 +214,7 @@ def main():
                     cancelled = st.form_submit_button("❌ Cancel", use_container_width=True)
                 
                 if submitted and location and price > 0:
-                    if save_pin(price, location, brand, fact, lat, lon):
+                    if save_pin(price, location, brand, fact, lat, lon, is_multi_pack):
                         st.success("Pin added successfully!")
                         st.session_state.pins = load_pins()  # Refresh from storage
                         st.session_state.show_form = False
