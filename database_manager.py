@@ -108,8 +108,8 @@ class DatabaseManager:
         except Exception as e:
             print(f"Error loading pins from database: {e}")
             return []
-    
-    def add_pin(self, price: float, location: str, brand: str, fact: str, lat: float, lon: float) -> bool:
+
+    def add_pin(self, price: float, location: str, brand: str, fact: str, lat: float, lon: float, is_multi_pack: bool) -> bool:
         """
         Add a new pin to database or JSON fallback.
         
@@ -120,6 +120,7 @@ class DatabaseManager:
             fact: Additional notes
             lat: Latitude
             lon: Longitude
+            is_multi_pack: Whether this pin is part of a multi-pack
             
         Returns:
             bool: True if successful, False otherwise
@@ -130,10 +131,9 @@ class DatabaseManager:
         try:
             with self.connection.cursor() as cursor:
                 cursor.execute("""
-                    INSERT INTO chocolate_pins (price, location, brand, fact, lat, lon)
-                    VALUES (%s, %s, %s, %s, %s, %s)
-                """, (price, location, brand, fact, lat, lon))
-                
+                    INSERT INTO chocolate_pins (price, location, brand, fact, lat, lon, is_multi_pack)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s)
+                """, (price, location, brand, fact, lat, lon, is_multi_pack))
                 return True
                 
         except Exception as e:
