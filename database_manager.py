@@ -63,6 +63,7 @@ class DatabaseManager:
                         fact TEXT,
                         lat DECIMAL(10, 8) NOT NULL,
                         lon DECIMAL(11, 8) NOT NULL,
+                        is_multi_pack BOOLEAN DEFAULT FALSE,
                         timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                     )
@@ -85,7 +86,7 @@ class DatabaseManager:
         try:
             with self.connection.cursor(cursor_factory=RealDictCursor) as cursor:
                 cursor.execute("""
-                    SELECT id, price, location, brand, fact, lat, lon, 
+                    SELECT id, price, location, brand, fact, lat, lon, is_multi_pack,
                            TO_CHAR(timestamp, 'YYYY-MM-DD HH24:MI:SS') as timestamp
                     FROM chocolate_pins 
                     ORDER BY created_at DESC
@@ -126,7 +127,7 @@ class DatabaseManager:
             bool: True if successful, False otherwise
         """
         if not self.use_database:
-            return self.json_manager.add_pin(price, location, brand, fact, lat, lon)
+            return self.json_manager.add_pin(price, location, brand, fact, lat, lon, is_multi_pack)
         
         try:
             with self.connection.cursor() as cursor:
@@ -260,7 +261,8 @@ class DatabaseManager:
                     brand=pin.get('brand', ''),
                     fact=pin.get('fact', ''),
                     lat=pin.get('lat', 0.0),
-                    lon=pin.get('lon', 0.0)
+                    lon=pin.get('lon', 0.0),
+                    is_multi_pack=pin.get('is_multi_pack', False)
                 )
             
             print(f"Successfully migrated {len(pins)} pins from JSON to database")

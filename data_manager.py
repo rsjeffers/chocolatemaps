@@ -86,8 +86,8 @@ class DataManager:
         except (json.JSONDecodeError, FileNotFoundError, Exception) as e:
             print(f"Error loading pins: {e}")
             return []
-    
-    def add_pin(self, price: float, location: str, brand: str, fact: str, lat: float, lon: float) -> bool:
+
+    def add_pin(self, price: float, location: str, brand: str, fact: str, lat: float, lon: float, is_multi_pack: bool) -> bool:
         """
         Add a new pin to the data.
         
@@ -98,6 +98,7 @@ class DataManager:
             fact: Additional notes
             lat: Latitude
             lon: Longitude
+            is_multi_pack: Whether this pin is part of a multi-pack
             
         Returns:
             bool: True if successful, False otherwise
@@ -113,7 +114,8 @@ class DataManager:
                 'lat': lat,
                 'lon': lon,
                 'timestamp': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                'id': len(pins) + 1  # Simple ID generation
+                'id': len(pins) + 1,  # Simple ID generation
+                'is_multi_pack': is_multi_pack
             }
             
             pins.append(new_pin)
