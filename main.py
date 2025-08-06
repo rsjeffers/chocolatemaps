@@ -8,7 +8,7 @@ from database_manager import database_manager
 # Set page config
 st.set_page_config(
     page_title="Orange Twirl Map",
-    page_icon="📍",
+    page_icon="🍫",
     layout="wide"
 )
 
