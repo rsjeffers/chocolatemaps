@@ -40,11 +40,12 @@ def create_map(pins, center_lat, center_lon):
         <div style="width: 250px;">
             <h4 style="color: #2E86AB; margin-bottom: 10px;">{pin['location']}</h4>
             <p style="margin-bottom: 8px; font-size: 18px; font-weight: bold; color: #D2691E;">
-                💰 ${pin.get('price', 'N/A'):.2f}
+                💰 £{pin.get('price', 'N/A'):.2f}
             </p>
             {f'<p style="margin-bottom: 8px;"><strong>Notes:</strong></p><p style="margin-bottom: 8px;">{pin["fact"]}</p>' if pin.get('fact') else ''}
             <p style="margin-bottom: 8px;"><strong>Added:</strong> {pin['timestamp']}</p>
             <p style="margin: 0;"><strong>Location:</strong> {pin['lat']:.4f}, {pin['lon']:.4f}</p>
+            <p style="margin: 0;"> {"<strong>Multi-Pack</strong>"if pin.get('is_multi_pack') else "<strong>Single Bar</strong>"}</p>
         </div>
         """
         

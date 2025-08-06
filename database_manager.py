@@ -69,7 +69,8 @@ class DatabaseManager:
             return False
     
     def _create_table(self):
-        """Create the pins table if it doesn't exist"""
+        """Create the pins table if it doesn't exist and ensure all columns are
+        present"""
         try:
             with self.connection.cursor() as cursor:
                 cursor.execute("""
@@ -86,7 +87,14 @@ class DatabaseManager:
                         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                     )
                 """)
-                print("Table 'chocolate_pins' created or verified")
+                
+                # Add columns that might not exist in older versions
+                cursor.execute("""
+                    ALTER TABLE chocolate_pins 
+                    ADD COLUMN IF NOT EXISTS is_multi_pack BOOLEAN DEFAULT FALSE
+                """)
+                
+                print("Table 'chocolate_pins' created or verified with all columns")
         except Exception as e:
             print(f"Error creating table: {e}")
             raise
@@ -117,6 +125,9 @@ class DatabaseManager:
                     pin['price'] = float(pin['price'])
                     pin['lat'] = float(pin['lat'])
                     pin['lon'] = float(pin['lon'])
+                    # Ensure is_multi_pack has a default value
+                    if pin.get('is_multi_pack') is None:
+                        pin['is_multi_pack'] = False
                     pins.append(pin)
                 
                 return pins
