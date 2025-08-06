@@ -53,7 +53,7 @@ def create_map(pins, center_lat, center_lon):
             location=[pin['lat'], pin['lon']],
             popup=folium.Popup(popup_html, max_width=300),
             tooltip=pin['price'],
-            icon=folium.Icon(color='red', icon='info-sign')
+            icon=folium.Icon(color='purple', icon='info-sign')
         ).add_to(m)
     
     return m
@@ -104,43 +104,35 @@ def main():
                     ["price", "timestamp"],
                 )
             reverse_dict = {"price": False, "timestamp": True}
-            for i, pin in enumerate(sorted(st.session_state.pins, key=lambda x: x[order], reverse=reverse_dict[order])):
-                price_display = f"£{pin.get('price', 0):.2f}" if 'price' in pin else "No price"
-                with st.expander(f"{pin['location']} - {price_display}", expanded=False):
-                    if 'price' in pin:
-                        st.write(f"**Price:** £{pin['price']:.2f}")
-                    if pin.get('fact'):
-                        st.write(f"**Notes:** {pin['fact']}")
-                    st.write(f"**Location:** {pin['lat']:.4f}, {pin['lon']:.4f}")
-                    st.write(f"**Added:** {pin['timestamp']}")
-                    
-                    if st.button(f"Delete Pin {i+1}", key=f"delete_{i}"):
-                        # For database: use the pin's actual ID
-                        # For JSON: need to find the original index in the unsorted list
-                        if database_manager.use_database:
-                            pin_id = pin.get('id')
-                            if pin_id and database_manager.delete_pin(pin_id):
-                                st.session_state.pins = load_pins()  # Refresh from storage
-                                st.rerun()
-                            else:
-                                st.error("Failed to delete pin")
-                        else:
-                            # For JSON storage, find the pin in the original unsorted list
-                            original_pins = load_pins()
-                            for idx, original_pin in enumerate(original_pins):
-                                if (original_pin.get('lat') == pin.get('lat') and 
-                                    original_pin.get('lon') == pin.get('lon') and
-                                    original_pin.get('timestamp') == pin.get('timestamp')):
-                                    if database_manager.delete_pin(idx):
-                                        st.session_state.pins = load_pins()  # Refresh from storage
-                                        st.rerun()
-                                        break
-                            else:
-                                st.error("Failed to delete pin")
+            single_pins = [pin for pin in st.session_state.pins if not pin.get('is_multi_pack')]
+            multi_back_pins = [pin for pin in st.session_state.pins if pin.get('is_multi_pack')]
+            for label, pins in {"Single bars": single_pins, "Multi-pack bars": multi_back_pins}.items():
+                st.subheader(label)
+                for i, pin in enumerate(sorted(pins, key=lambda x: x[order], reverse=reverse_dict[order])):
+                    price_display = f"£{pin.get('price', 0):.2f}" if 'price' in pin else "No price"
+                    with st.expander(f"{pin['location']} - {price_display}", expanded=False):
+                        if 'price' in pin:
+                            st.write(f"**Price:** £{pin['price']:.2f}")
+                        if pin.get('fact'):
+                            st.write(f"**Notes:** {pin['fact']}")
+                        st.write(f"**Location:** {pin['lat']:.4f}, {pin['lon']:.4f}")
+                        st.write(f"**Added:** {pin['timestamp']}")
+
+                        if st.button(f"Delete {label.lower()} pin {i+1}", key=f"delete_{label.lower()}{i}"):
+                            # For database: use the pin's actual ID
+                            # For JSON: need to find the original index in the unsorted list
+                            if database_manager.use_database:
+                                pin_id = pin.get('id')
+                                if pin_id and database_manager.delete_pin(pin_id):
+                                    st.session_state.pins = load_pins()  # Refresh from storage
+                                    st.rerun()
+                                else:
+                                    st.error("Failed to delete pin")
         else:
             st.info("No chocolate prices added yet. Click on the map to add your first price entry!")
         
         # Data storage info (for debugging/transparency)
+        st.subheader(f"📁 Data Storage Info")
         with st.expander("📁 Storage Info", expanded=False):
             info = database_manager.get_data_info()
             st.write(f"**Storage Type:** {info['storage_type']}")
