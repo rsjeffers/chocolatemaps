@@ -54,6 +54,25 @@ class DatabaseManager:
             print(f"Database connection failed: {e}")
             return False
     
+    def test_connection(self) -> bool:
+        """
+        Test if the database connection is working.
+        
+        Returns:
+            bool: True if connection is working, False otherwise
+        """
+        try:
+            if not self.connection or self.connection.closed:
+                return False
+            
+            with self.connection.cursor() as cursor:
+                cursor.execute("SELECT 1")
+                return True
+                
+        except Exception as e:
+            print(f"Database connection test failed: {e}")
+            return False
+    
     def _create_table(self):
         """Create the pins table if it doesn't exist"""
         try:
@@ -131,9 +150,24 @@ class DatabaseManager:
             bool: True if successful, False otherwise
         """
         if not self.use_database:
-            return self.json_manager.add_pin(price, location, brand, fact, lat, lon, is_multi_pack)
+            try:
+                return self.json_manager.add_pin(price, location, brand, fact, lat, lon, is_multi_pack)
+            except Exception as e:
+                print(f"Error adding pin to JSON: {e}")
+                return False
         
         try:
+            # Check if connection is still alive
+            if not self.connection or self.connection.closed:
+                print("Database connection is closed, attempting to reconnect...")
+                if not self._init_database():
+                    print("Failed to reconnect to database, falling back to JSON")
+                    self.use_database = False
+                    if not hasattr(self, 'json_manager'):
+                        from data_manager import DataManager
+                        self.json_manager = DataManager()
+                    return self.json_manager.add_pin(price, location, brand, fact, lat, lon, is_multi_pack)
+            
             with self.connection.cursor() as cursor:
                 cursor.execute("""
                     INSERT INTO chocolate_pins (price, location, brand, fact, lat, lon, is_multi_pack)
@@ -143,7 +177,24 @@ class DatabaseManager:
                 
         except Exception as e:
             print(f"Error adding pin to database: {e}")
-            return False
+            print(f"Database connection status: {self.connection.closed if self.connection else 'No connection'}")
+            
+            # Try to fallback to JSON storage
+            try:
+                print("Attempting fallback to JSON storage...")
+                if not hasattr(self, 'json_manager'):
+                    from data_manager import DataManager
+                    self.json_manager = DataManager()
+                
+                result = self.json_manager.add_pin(price, location, brand, fact, lat, lon, is_multi_pack)
+                if result:
+                    print("Successfully saved to JSON fallback")
+                else:
+                    print("Failed to save to JSON fallback")
+                return result
+            except Exception as fallback_error:
+                print(f"JSON fallback also failed: {fallback_error}")
+                return False
     
     def delete_pin(self, pin_id: int) -> bool:
         """
@@ -219,21 +270,36 @@ class DatabaseManager:
             return info
         
         try:
+            # Check connection status
+            if not self.connection or self.connection.closed:
+                return {
+                    'storage_type': 'PostgreSQL Database (Disconnected)',
+                    'database_url': os.getenv('DATABASE_URL', 'Not set'),
+                    'connection_status': 'Disconnected',
+                    'error': 'Database connection is closed',
+                    'pin_count': 0
+                }
+            
             with self.connection.cursor() as cursor:
                 cursor.execute("SELECT COUNT(*) FROM chocolate_pins")
                 pin_count = cursor.fetchone()[0]
+                
+                # Test connection with a simple query
+                cursor.execute("SELECT 1")
+                cursor.fetchone()
                 
                 return {
                     'storage_type': 'PostgreSQL Database',
                     'database_url': os.getenv('DATABASE_URL', 'Not set'),
                     'pin_count': pin_count,
                     'table_name': 'chocolate_pins',
-                    'connection_status': 'Connected' if self.connection else 'Disconnected'
+                    'connection_status': 'Connected'
                 }
                 
         except Exception as e:
             return {
                 'storage_type': 'PostgreSQL Database (Error)',
+                'database_url': os.getenv('DATABASE_URL', 'Not set'),
                 'error': str(e),
                 'connection_status': 'Error',
                 'pin_count': 0

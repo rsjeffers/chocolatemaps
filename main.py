@@ -19,7 +19,11 @@ def load_pins():
 
 def save_pin(price, location, brand, fact, lat, lon, is_multi_pack):
     """Save a new pin using the database manager"""
-    return database_manager.add_pin(price, location, brand, fact, lat, lon, is_multi_pack)
+    try:
+        return database_manager.add_pin(price, location, brand, fact, lat, lon, is_multi_pack)
+    except Exception as e:
+        print(f"Error in save_pin: {e}")
+        return False
 
 def create_map(pins, center_lat, center_lon):
     """Create a folium map with existing pins"""
@@ -141,11 +145,35 @@ def main():
             st.write(f"**Storage Type:** {info['storage_type']}")
             if 'database_url' in info:
                 st.write(f"**Database:** Connected" if info['connection_status'] == 'Connected' else f"**Database:** {info['connection_status']}")
+                # Show database connection details for debugging
+                if info['connection_status'] != 'Connected':
+                    st.warning("Database connection issue detected!")
+                
+                # Add connection test button
+                col1, col2 = st.columns(2)
+                with col1:
+                    if st.button("🔍 Test Connection"):
+                        if database_manager.test_connection():
+                            st.success("Database connection is working!")
+                        else:
+                            st.error("Database connection failed!")
+                
+                with col2:
+                    if st.button("🔄 Reconnect"):
+                        if database_manager._init_database():
+                            st.success("Reconnected successfully!")
+                            st.rerun()
+                        else:
+                            st.error("Reconnection failed!")
             elif 'data_directory' in info:
                 st.write(f"**Environment:** {'Render Cloud' if info.get('is_render_environment') else 'Local Development'}")
                 st.write(f"**Data Directory:** {info['data_directory']}")
                 st.write(f"**File Size:** {info.get('file_size_bytes', 0)} bytes")
             st.write(f"**Total Pins:** {info.get('pin_count', 0)}")
+            
+            # Show any error information
+            if 'error' in info:
+                st.error(f"**Error:** {info['error']}")
             
             # Only show backup for JSON storage
             if 'data_directory' in info and st.button("📋 Create Backup"):

@@ -52,6 +52,16 @@ class DataManager:
             bool: True if successful, False otherwise
         """
         try:
+            # Ensure directory exists with proper error handling
+            try:
+                os.makedirs(self.data_dir, exist_ok=True)
+            except PermissionError as e:
+                print(f"Permission error creating directory {self.data_dir}: {e}")
+                return False
+            except Exception as e:
+                print(f"Error creating directory {self.data_dir}: {e}")
+                return False
+            
             # Create a temporary file first (atomic write)
             temp_file = self.pins_file + ".tmp"
             
@@ -62,6 +72,15 @@ class DataManager:
             os.rename(temp_file, self.pins_file)
             return True
             
+        except PermissionError as e:
+            print(f"Permission error saving pins to {self.pins_file}: {e}")
+            # Clean up temp file if it exists
+            if os.path.exists(temp_file):
+                try:
+                    os.remove(temp_file)
+                except:
+                    pass
+            return False
         except Exception as e:
             print(f"Error saving pins: {e}")
             # Clean up temp file if it exists
@@ -199,14 +218,24 @@ class DataManager:
         Returns:
             Dict: Information about data storage
         """
-        return {
+        info = {
             'data_directory': self.data_dir,
             'pins_file': self.pins_file,
             'file_exists': os.path.exists(self.pins_file),
             'pin_count': self.get_pin_count(),
             'file_size_bytes': os.path.getsize(self.pins_file) if os.path.exists(self.pins_file) else 0,
-            'is_render_environment': self.data_dir.startswith('/opt/render')
+            'is_render_environment': self.data_dir.startswith('/opt/render'),
+            'directory_exists': os.path.exists(self.data_dir),
+            'directory_writable': os.access(self.data_dir, os.W_OK) if os.path.exists(self.data_dir) else False
         }
+        
+        # Add error information if there are issues
+        if not info['directory_exists']:
+            info['error'] = f"Data directory does not exist: {self.data_dir}"
+        elif not info['directory_writable']:
+            info['error'] = f"Data directory is not writable: {self.data_dir}"
+        
+        return info
 
 # Create a global instance
 data_manager = DataManager()
