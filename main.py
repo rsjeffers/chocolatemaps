@@ -110,13 +110,28 @@ def main():
                     st.write(f"**Added:** {pin['timestamp']}")
                     
                     if st.button(f"Delete Pin {i+1}", key=f"delete_{i}"):
-                        # Use the pin's ID for database, or index for JSON
-                        pin_id = pin.get('id', i)
-                        if database_manager.delete_pin(pin_id):
-                            st.session_state.pins = load_pins()  # Refresh from storage
-                            st.rerun()
+                        # For database: use the pin's actual ID
+                        # For JSON: need to find the original index in the unsorted list
+                        if database_manager.use_database:
+                            pin_id = pin.get('id')
+                            if pin_id and database_manager.delete_pin(pin_id):
+                                st.session_state.pins = load_pins()  # Refresh from storage
+                                st.rerun()
+                            else:
+                                st.error("Failed to delete pin")
                         else:
-                            st.error("Failed to delete pin")
+                            # For JSON storage, find the pin in the original unsorted list
+                            original_pins = load_pins()
+                            for idx, original_pin in enumerate(original_pins):
+                                if (original_pin.get('lat') == pin.get('lat') and 
+                                    original_pin.get('lon') == pin.get('lon') and
+                                    original_pin.get('timestamp') == pin.get('timestamp')):
+                                    if database_manager.delete_pin(idx):
+                                        st.session_state.pins = load_pins()  # Refresh from storage
+                                        st.rerun()
+                                        break
+                            else:
+                                st.error("Failed to delete pin")
         else:
             st.info("No chocolate prices added yet. Click on the map to add your first price entry!")
         

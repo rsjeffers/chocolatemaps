@@ -106,6 +106,10 @@ class DataManager:
         try:
             pins = self.load_pins()
             
+            # Generate a unique ID that doesn't conflict with existing IDs
+            existing_ids = [pin.get('id', 0) for pin in pins]
+            new_id = max(existing_ids, default=0) + 1
+            
             new_pin = {
                 'price': price,
                 'location': location,
@@ -114,7 +118,7 @@ class DataManager:
                 'lat': lat,
                 'lon': lon,
                 'timestamp': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                'id': len(pins) + 1,  # Simple ID generation
+                'id': new_id,
                 'is_multi_pack': is_multi_pack
             }
             
