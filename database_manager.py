@@ -4,6 +4,10 @@ from psycopg2.extras import RealDictCursor
 from datetime import datetime
 from typing import List, Dict, Any, Optional
 import json
+from dotenv import load_dotenv
+
+# Load environment variables from .env file for local development
+load_dotenv()
 
 class DatabaseManager:
     """
