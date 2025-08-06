@@ -145,7 +145,7 @@ def main():
                 st.write(f"**Environment:** {'Render Cloud' if info.get('is_render_environment') else 'Local Development'}")
                 st.write(f"**Data Directory:** {info['data_directory']}")
                 st.write(f"**File Size:** {info.get('file_size_bytes', 0)} bytes")
-            st.write(f"**Total Pins:** {info['pin_count']}")
+            st.write(f"**Total Pins:** {info.get('pin_count', 0)}")
             
             # Only show backup for JSON storage
             if 'data_directory' in info and st.button("📋 Create Backup"):

@@ -231,7 +231,8 @@ class DatabaseManager:
             return {
                 'storage_type': 'PostgreSQL Database (Error)',
                 'error': str(e),
-                'connection_status': 'Error'
+                'connection_status': 'Error',
+                'pin_count': 0
             }
     
     def migrate_from_json(self, json_file_path: str) -> bool:
